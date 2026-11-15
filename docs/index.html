@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d8432e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Voice Keyboard</title>
+<style>
+:root{
+  --desk:#e6e9ee;--paper:#ffffff;--deck:#cfd5de;--key:#f8f9fb;--key-edge:#aab2c0;
+  --ink:#1c2330;--ink-soft:#586273;--accent:#d8432e;--accent-ink:#ffffff;--ok:#1f7a4d;--warn:#9a5b00;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Bengali","Noto Sans Devanagari",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{--desk:#12161d;--paper:#1b212b;--deck:#262d39;--key:#343d4c;--key-edge:#0c0f14;
+    --ink:#eef1f6;--ink-soft:#a3adbd;--accent:#ff6a52;--accent-ink:#1a0d0a;--ok:#5fd39a;--warn:#f0b24a;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--desk);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45}
+.wrap{max-width:860px;margin:0 auto;padding:16px 16px 28px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+h1{font-weight:800;font-size:1.5rem;margin:0;letter-spacing:-.01em;flex:1 1 auto}
+.link{border:1px solid var(--key-edge);background:var(--key);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .9rem var(--font);cursor:pointer}
+.paper{background:var(--paper);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 0 var(--key-edge)}
+textarea{width:100%;min-height:170px;resize:vertical;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:1.25rem;line-height:1.5;padding:4px}
+textarea::placeholder{color:var(--ink-soft)}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.live{min-height:1.6em;color:var(--ink-soft);font-style:italic;padding:0 4px;overflow-wrap:anywhere}
+.live b{font-style:normal;color:var(--accent)}
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:.9rem;color:var(--ink-soft);border-top:1px solid var(--deck);padding-top:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--deck);color:var(--ink);font-weight:600}
+.pill i{width:9px;height:9px;border-radius:50%;background:var(--ink-soft)}
+.pill.on i{background:var(--accent);animation:pulse 1s infinite}
+.pill.work i{background:var(--warn)}
+.pill.done i{background:var(--ok)}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pill.on i{animation:none}}
+#msg{flex:1 1 200px}
+#count{font-variant-numeric:tabular-nums}
+.options{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:.95rem}
+.options label{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+select,input[type=text],input[type=password]{font:inherit;padding:7px 8px;border-radius:8px;border:1px solid var(--key-edge);background:var(--key);color:var(--ink);max-width:100%}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.deck{background:var(--deck);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:5px}
+#keys{display:flex;flex-direction:column;gap:6px}
+.k{flex:1 1 0;min-width:0;height:46px;border:0;border-radius:8px;background:var(--key);color:var(--ink);font:500 1.05rem var(--font);box-shadow:0 2px 0 var(--key-edge);cursor:pointer;padding:0 2px;touch-action:manipulation}
+.k:active,.act:active{transform:translateY(2px);box-shadow:none}
+.k:focus-visible,.act:focus-visible,select:focus-visible,.link:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.k.wide{flex:1.6 1 0;font-size:.85rem}
+.k.space{flex:4 1 0;font-size:.85rem;color:var(--ink-soft)}
+.k.held{background:var(--ink);color:var(--paper)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.act{flex:1 1 110px;min-height:52px;border:0;border-radius:10px;background:var(--key);color:var(--ink);font:600 1rem var(--font);box-shadow:0 2px 0 var(--key-edge);cursor:pointer;padding:6px 10px}
+.act:disabled{opacity:.45;cursor:not-allowed}
+#mic{flex:3 1 260px;min-height:68px;background:var(--accent);color:var(--accent-ink);font-size:1.3rem;font-weight:800}
+#mic.on{background:var(--ink);color:var(--paper)}
+#fix{flex:2 1 170px;outline:2px solid var(--accent);outline-offset:-2px}
+[hidden]{display:none !important}
+dialog{border:0;border-radius:14px;background:var(--paper);color:var(--ink);padding:18px;max-width:min(520px,calc(100vw - 32px));width:100%}
+dialog::backdrop{background:rgba(10,14,20,.55)}
+dialog h2{margin:0 0 6px;font-size:1.2rem}
+dialog p{margin:6px 0;color:var(--ink-soft);font-size:.92rem}
+dialog label{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-weight:600;font-size:.92rem}
+dialog input{width:100%}
+dialog .row{justify-content:flex-end;margin-top:14px;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Voice Keyboard</h1>
+    <button class="link" id="install" type="button" hidden>Install app</button>
+    <button class="link" id="openSettings" type="button">Settings</button>
+  </header>
+
+  <section class="paper">
+    <textarea id="text" placeholder="Press Start listening and speak. Your words appear here."></textarea>
+    <div class="live" id="live" aria-live="polite"></div>
+    <div class="status">
+      <span class="pill" id="pill"><i></i><span id="state">Ready</span></span>
+      <span id="msg">Press Start listening and speak naturally.</span>
+      <span id="count">0 words</span>
+    </div>
+  </section>
+
+  <div class="options">
+    <label for="speak">I speak
+      <select id="speak"></select>
+    </label>
+    <label for="lang">Write in
+      <select id="lang">
+        <option value="">the same language</option>
+        <option>English</option><option>Bengali</option><option>Hindi</option><option>Urdu</option>
+        <option>Tamil</option><option>Telugu</option><option>Marathi</option><option>Gujarati</option>
+        <option>Punjabi</option><option>Spanish</option><option>French</option><option>German</option>
+        <option>Portuguese</option><option>Arabic</option><option>Chinese</option><option>Japanese</option>
+        <option>Korean</option><option>Russian</option><option>Indonesian</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="auto" checked> Fix my words when I stop</label>
+  </div>
+
+  <section class="deck" aria-label="Keyboard">
+    <div class="actions">
+      <button class="act" id="mic" type="button">Start listening</button>
+      <button class="act" id="fix" type="button">Fix my words</button>
+      <button class="act" id="undo" type="button" disabled>Undo</button>
+      <button class="act" id="copy" type="button">Copy</button>
+      <button class="act" id="clear" type="button">Clear</button>
+    </div>
+    <div id="keys"></div>
+  </section>
+</div>
+
+<dialog id="settings">
+  <h2>Settings</h2>
+  <p>Without a key, <b>Fix my words</b> does a basic cleanup: it removes fillers like "um" and repeated words. With an Anthropic API key it rewrites unclear speech properly, in any language, and can translate.</p>
+  <p>The key is saved only in this browser on this device and is sent only to api.anthropic.com.</p>
+  <label for="key">Anthropic API key
+    <input type="password" id="key" autocomplete="off" placeholder="sk-ant-…">
+  </label>
+  <label for="model">Model
+    <input type="text" id="model" autocomplete="off">
+  </label>
+  <div class="row">
+    <button class="link" id="cancelSettings" type="button">Cancel</button>
+    <button class="link" id="saveSettings" type="button">Save</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var ta=$("text"), live=$("live"), pill=$("pill"), stateEl=$("state"), msg=$("msg"), count=$("count");
+  var micBtn=$("mic"), fixBtn=$("fix"), undoBtn=$("undo"), copyBtn=$("copy"), clearBtn=$("clear");
+  var auto=$("auto"), lang=$("lang"), speak=$("speak");
+  var DEFAULT_MODEL="claude-haiku-5-5";
+  var undoStack=[], fixing=false, heard=false;
+
+  function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+  function setState(kind,label){ pill.className="pill"+(kind?" "+kind:""); stateEl.textContent=label; }
+  function say(t){ msg.textContent=t; }
+  function refresh(){
+    var w=(ta.value.trim().match(/\S+/g)||[]).length;
+    count.textContent=w+(w===1?" word":" words");
+    undoBtn.disabled=!undoStack.length;
+    store("vk-draft",ta.value);
+  }
+  function pushUndo(){ undoStack.push(ta.value); if(undoStack.length>30) undoStack.shift(); }
+  function insert(s){ ta.setRangeText(s,ta.selectionStart,ta.selectionEnd,"end"); refresh(); }
+  function insertPhrase(s){
+    s=s.trim(); if(!s) return;
+    var before=ta.value.slice(0,ta.selectionStart);
+    if(before&&!/\s$/.test(before)) s=" "+s;
+    insert(s); ta.scrollTop=ta.scrollHeight;
+  }
+
+  /* ---------- languages for listening ---------- */
+  var LANGS=[["","my device language"],["en-IN","English (India)"],["en-US","English (US)"],["en-GB","English (UK)"],
+    ["bn-IN","Bengali"],["hi-IN","Hindi"],["ur-IN","Urdu"],["ta-IN","Tamil"],["te-IN","Telugu"],["mr-IN","Marathi"],
+    ["gu-IN","Gujarati"],["kn-IN","Kannada"],["ml-IN","Malayalam"],["pa-IN","Punjabi"],["es-ES","Spanish"],
+    ["fr-FR","French"],["de-DE","German"],["pt-BR","Portuguese"],["ar-SA","Arabic"],["zh-CN","Chinese"],
+    ["ja-JP","Japanese"],["ko-KR","Korean"],["ru-RU","Russian"],["id-ID","Indonesian"]];
+  LANGS.forEach(function(l){ var o=document.createElement("option"); o.value=l[0]; o.textContent=l[1]; speak.appendChild(o); });
+  speak.value=store("vk-speak")||""; lang.value=store("vk-write")||"";
+  if(store("vk-auto")==="0") auto.checked=false;
+  speak.addEventListener("change",function(){ store("vk-speak",speak.value); if(want){ stop(); say("Language changed. Press Start listening again."); } });
+  lang.addEventListener("change",function(){ store("vk-write",lang.value); });
+  auto.addEventListener("change",function(){ store("vk-auto",auto.checked?"1":"0"); });
+
+  /* ---------- on-screen keys ---------- */
+  var rows=["1234567890","qwertyuiop","asdfghjkl","zxcvbnm,.?"], shift=false, keysEl=$("keys"), letterKeys=[], shiftKey;
+  function mk(label,cls,fn,aria){
+    var b=document.createElement("button"); b.type="button"; b.className="k"+(cls?" "+cls:""); b.textContent=label;
+    if(aria) b.setAttribute("aria-label",aria);
+    b.addEventListener("pointerdown",function(e){ e.preventDefault(); });
+    b.addEventListener("click",fn); return b;
+  }
+  rows.forEach(function(r){
+    var row=document.createElement("div"); row.className="row";
+    r.split("").forEach(function(ch){
+      var b=mk(ch,"",function(){ pushUndo(); insert(b.textContent); if(shift){ shift=false; paintShift(); } });
+      if(/[a-z]/.test(ch)) letterKeys.push([b,ch]);
+      row.appendChild(b);
+    });
+    keysEl.appendChild(row);
+  });
+  function paintShift(){
+    letterKeys.forEach(function(p){ p[0].textContent=shift?p[1].toUpperCase():p[1]; });
+    shiftKey.classList.toggle("held",shift);
+  }
+  var last=document.createElement("div"); last.className="row";
+  shiftKey=mk("Shift","wide",function(){ shift=!shift; paintShift(); });
+  last.appendChild(shiftKey);
+  last.appendChild(mk("Space","space",function(){ pushUndo(); insert(" "); }));
+  last.appendChild(mk("⌫","wide",function(){
+    pushUndo(); var a=ta.selectionStart,b=ta.selectionEnd; if(a===b){ if(!a) return; a--; } ta.setRangeText("",a,b,"end"); refresh();
+  },"Backspace"));
+  last.appendChild(mk("Enter","wide",function(){ pushUndo(); insert("\n"); }));
+  keysEl.appendChild(last);
+
+  /* ---------- fixing ---------- */
+  function basicClean(raw){
+    var s=raw.replace(/\b(um+|uh+|erm*|hmm+|you know|i mean)\b,?\s*/gi,"");
+    try{ s=s.replace(new RegExp("(?<![\\p{L}\\p{M}\\p{N}])([\\p{L}\\p{M}\\p{N}']+)(\\s+\\1)+(?![\\p{L}\\p{M}\\p{N}])","giu"),"$1"); }catch(e){}
+    s=s.replace(/[ \t]+/g," ").replace(/ ([,.?!])/g,"$1").trim();
+    if(s) s=s.charAt(0).toUpperCase()+s.slice(1);
+    if(/[A-Za-z0-9]$/.test(s)) s+=".";
+    return s;
+  }
+  function buildPrompt(raw){
+    var target=lang.value
+      ? "Write the result in "+lang.value+", in its normal script, whatever language was spoken."
+      : "Write the result in the same language and script the speaker used. If they mix languages, keep their mix.";
+    return "You repair text that came from speech-to-text dictation. The speaker may talk in any language, "+
+      "may stutter, repeat words, use fillers, restart sentences, trail off, or be misheard by the recognizer.\n\n"+
+      "Rewrite the text so it says clearly what the speaker meant:\n"+
+      "- remove fillers, stutters, repeats and false starts\n"+
+      "- when they correct themselves, keep only the corrected version\n"+
+      "- replace words that were clearly misheard with the word that fits the context\n"+
+      "- add punctuation, capitals and paragraph breaks\n"+
+      "- keep their meaning, tone and every fact; do not add new ideas, do not answer or comment on the text\n"+
+      "- "+target+"\n\n"+
+      "Reply with the repaired text only, no quotes and no explanation.\n\n"+
+      "Dictated text:\n<<<\n"+raw+"\n>>>";
+  }
+  function smartFix(raw,key){
+    return fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:store("vk-model")||DEFAULT_MODEL,max_tokens:4096,messages:[{role:"user",content:buildPrompt(raw)}]})
+    }).then(function(r){
+      return r.json().then(function(j){
+        if(!r.ok) throw new Error(r.status===401?"key":(j&&j.error&&j.error.message)||("HTTP "+r.status));
+        var out="";
+        (j.content||[]).forEach(function(b){ if(b.type==="text") out+=b.text; });
+        return out.trim();
+      });
+    });
+  }
+  function fix(){
+    if(fixing) return;
+    var original=ta.value, raw=original.trim();
+    if(!raw){ say("Nothing to fix yet. Speak or type first."); return; }
+    var key=store("vk-key")||"";
+    heard=false;
+    function done(out,note){
+      if(out&&out!==raw){ undoStack.push(original); ta.value=out; }
+      ta.selectionStart=ta.selectionEnd=ta.value.length;
+      setState("done","Done"); say(note); refresh();
+    }
+    if(!key){ done(basicClean(raw),"Basic cleanup done. Add an API key in Settings for full fixing in any language."); return; }
+    fixing=true; fixBtn.disabled=true; fixBtn.textContent="Fixing…"; setState("work","Fixing"); say("Making your words clear…");
+    smartFix(raw,key).then(function(out){
+      if(ta.value!==original){ say("You changed the text while it was being fixed, so it was left as is."); setState("","Ready"); return; }
+      done(out,"Fixed. Press Undo to get your original words back.");
+    }).catch(function(e){
+      setState("","Ready");
+      if(e&&e.message==="key") say("The API key was rejected. Check it in Settings.");
+      else if(!navigator.onLine) say("You are offline, so the text could not be fixed.");
+      else say("Could not fix the text ("+((e&&e.message)||"error")+"). Press Fix my words to try again.");
+    }).then(function(){ fixing=false; fixBtn.disabled=false; fixBtn.textContent="Fix my words"; });
+  }
+  fixBtn.addEventListener("click",fix);
+
+  /* ---------- listening ---------- */
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, want=false;
+  var isAndroid=/Android/i.test(navigator.userAgent);
+  function paintMic(){ micBtn.classList.toggle("on",want); micBtn.textContent=want?"Stop listening":"Start listening"; }
+  function finished(){
+    live.textContent=""; paintMic(); setState("","Ready");
+    if(auto.checked&&heard&&ta.value.trim()) fix();
+  }
+  function stop(){ want=false; paintMic(); if(rec){ try{ rec.stop(); }catch(e){} } }
+  function start(){
+    rec=new SR();
+    rec.lang=speak.value||navigator.language||"en-US";
+    rec.interimResults=true; rec.continuous=!isAndroid; rec.maxAlternatives=1;
+    rec.onresult=function(e){
+      var interim="";
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        var r=e.results[i];
+        if(r.isFinal){ pushUndo(); insertPhrase(r[0].transcript); heard=true; }
+        else interim+=r[0].transcript;
+      }
+      live.textContent="";
+      if(interim){ var b=document.createElement("b"); b.textContent="Hearing: "; live.appendChild(b); live.appendChild(document.createTextNode(interim)); }
+    };
+    rec.onerror=function(e){
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"){ want=false; say("The microphone is blocked. Allow it for this site in your browser, then press Start listening."); }
+      else if(e.error==="network"){ want=false; say("Listening needs an internet connection."); }
+      else if(e.error==="language-not-supported"){ want=false; say("This browser cannot listen in that language. Pick another under I speak."); }
+      else if(e.error==="audio-capture"){ want=false; say("No microphone was found."); }
+    };
+    rec.onend=function(){
+      if(want){ try{ rec.start(); return; }catch(e){ want=false; } }
+      finished();
+    };
+    try{ rec.start(); want=true; paintMic(); setState("on","Listening"); say("Speak now. Take your time."); }
+    catch(e){ say("Listening did not start. Press Start listening again."); }
+  }
+  if(!SR){
+    micBtn.hidden=true; auto.checked=false;
+    say("This browser cannot listen. Open this page in Chrome or Edge. You can still type and use Fix my words.");
+  }
+  micBtn.addEventListener("click",function(){
+    if(want){ stop(); return; }
+    ta.selectionStart=ta.selectionEnd=ta.value.length; start();
+  });
+
+  /* ---------- other actions ---------- */
+  undoBtn.addEventListener("click",function(){
+    if(!undoStack.length||fixing) return;
+    ta.value=undoStack.pop(); ta.selectionStart=ta.selectionEnd=ta.value.length; refresh(); say("Undone.");
+  });
+  clearBtn.addEventListener("click",function(){ if(!ta.value||fixing) return; pushUndo(); ta.value=""; refresh(); say("Cleared. Press Undo to bring it back."); });
+  copyBtn.addEventListener("click",function(){
+    if(!ta.value){ say("Nothing to copy yet."); return; }
+    function fallback(){ ta.select(); try{ document.execCommand("copy"); say("Copied. Paste it anywhere."); }catch(e){ say("Copy was blocked. The text is selected, copy it yourself."); } }
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function(){ say("Copied. Paste it anywhere."); },fallback);
+    else fallback();
+  });
+  ta.addEventListener("input",refresh);
+  var d0=store("vk-draft"); if(d0) ta.value=d0;
+  refresh();
+
+  /* ---------- settings ---------- */
+  var dlg=$("settings"), keyIn=$("key"), modelIn=$("model");
+  $("openSettings").addEventListener("click",function(){
+    keyIn.value=store("vk-key")||""; modelIn.value=store("vk-model")||DEFAULT_MODEL;
+    if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
+  });
+  function closeDlg(){ if(dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+  $("cancelSettings").addEventListener("click",closeDlg);
+  $("saveSettings").addEventListener("click",function(){
+    store("vk-key",keyIn.value.trim()); store("vk-model",modelIn.value.trim()||DEFAULT_MODEL); closeDlg();
+    say(keyIn.value.trim()?"Saved. Fix my words now uses your API key.":"Saved. Fix my words will do a basic cleanup.");
+  });
+
+  /* ---------- install ---------- */
+  var installBtn=$("install"), deferred=null;
+  window.addEventListener("beforeinstallprompt",function(e){ e.preventDefault(); deferred=e; installBtn.hidden=false; });
+  installBtn.addEventListener("click",function(){ if(!deferred) return; deferred.prompt(); deferred=null; installBtn.hidden=true; });
+  window.addEventListener("appinstalled",function(){ installBtn.hidden=true; });
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
+})();
+</script>
+</body>
+</html>
